@@ -18,7 +18,6 @@ export default class Ecosystem {
     this.herbivores = []
     this.predators = []
     this.simTime = 0
-    this.plantSpawnChance = 0.25
     this.plantSpawnTimer = 0
     this.showTargets = true // Добавляем свойство для отображения целей
     this.directionChangeChance = 100 // Default value

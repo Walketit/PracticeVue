@@ -64,6 +64,17 @@
             v-model.number="directionChangeChance"
           />
         </label>
+
+        <label>
+  Шанс появления новых растений: {{ plantsSpawnChance }}%
+  <input
+    type="range"
+    min="0"
+    max="100"
+    step="1"
+    v-model.number="plantsSpawnChance"
+  />
+</label>
       </div>
 
       <canvas ref="canvas" :width="width" :height="height" class="ecosystem-canvas" />
