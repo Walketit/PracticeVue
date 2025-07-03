@@ -128,7 +128,6 @@ const mouseX = ref(0)
 const mouseY = ref(0)
 
 let updateInterval = null
-let timeInterval = null
 let lastTime = performance.now()
 
 // Основной цикл отрисовки
@@ -138,9 +137,10 @@ function loop() {
   lastTime = now
 
   if (ctx.value) {
-    ecosystem.value.update(deltaTime, directionChangeChance.value, plantsSpawnChance.value)
-    ecosystem.value.draw(ctx.value)
-  }
+  ecosystem.value.simTime += deltaTime / 1000 // теперь время обновляется точно
+  ecosystem.value.update(deltaTime, directionChangeChance.value, plantsSpawnChance.value)
+  ecosystem.value.draw(ctx.value)
+}
 }
 
 // Переключение целей
@@ -180,9 +180,6 @@ function setupMouseTracking() {
 function startSimulation() {
   stopSimulation()
   updateInterval = setInterval(loop, 1000 / 30 / speedMultiplier.value)
-  timeInterval = setInterval(() => {
-    ecosystem.value.simTime += 1 * speedMultiplier.value
-  }, 1000)
   setupMouseTracking()
   isRunning.value = true
 }
@@ -190,9 +187,7 @@ function startSimulation() {
 // Остановка симуляции
 function stopSimulation() {
   clearInterval(updateInterval)
-  clearInterval(timeInterval)
   updateInterval = null
-  timeInterval = null
   isRunning.value = false
 }
 

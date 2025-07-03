@@ -1,6 +1,6 @@
 // Базовый класс для Травоядных и Хищников
 export default class Animal {
-  constructor(x, y, color) {
+  constructor(x, y) {
     this.x = x // позиция X на поле
     this.y = y // позиция Y на поле
     this.radius = 8 // радиус отображения модельки
