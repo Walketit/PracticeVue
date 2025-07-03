@@ -1,13 +1,17 @@
 <template>
+  <!-- Основной контейнер -->
   <div class="ecosystem">
+    <!-- Панель статистики -->
     <div class="stats-panel">
       <h3>Статистика</h3>
 
+      <!-- Блок: растения -->
       <div class="stat-block">
         <h4>Растения</h4>
         <div>Количество: {{ plantCountActual }}</div>
       </div>
 
+      <!-- Блок: травоядные -->
       <div class="stat-block">
         <h4>Травоядные</h4>
         <div>Количество: {{ herbivoreCountActual }}</div>
@@ -15,6 +19,7 @@
         <div>Среднее восприятие: {{ herbivoreAvgPerception.toFixed(0) }}</div>
       </div>
 
+      <!-- Блок: хищники -->
       <div class="stat-block">
         <h4>Хищники</h4>
         <div>Количество: {{ predatorCountActual }}</div>
@@ -23,22 +28,28 @@
       </div>
     </div>
 
+    <!-- Панель с canvas и управлением -->
     <div class="main-panel">
+      <!-- Кнопки управления -->
       <div class="controls">
         <button @click="toggleSimulation">{{ isRunning ? 'Пауза' : 'Старт' }}</button>
         <button @click="resetSimulation">Сброс симуляции</button>
 
+        <!-- Управление скоростью -->
         <label>
           Скорость: {{ speedMultiplier.toFixed(1) }}x
           <input type="range" min="0.5" max="3" step="0.1" v-model.number="speedMultiplier" @input="handleSpeedChange" />
         </label>
 
+        <!-- Переключение отображения целей -->
         <button @click="toggleShowTargets">
           {{ ecosystem.showTargets ? 'Скрыть цели' : 'Показать цели' }}
         </button>
 
+        <!-- Таймер симуляции -->
         <div>Время симуляции: {{ ecosystem.simTime.toFixed(1) }} сек</div>
 
+        <!-- Слайдеры для начальных количеств существ -->
         <label>
           Растений: {{ plantCount }}
           <input type="range" min="0" max="30" v-model.number="plantCount" />
@@ -54,32 +65,24 @@
           <input type="range" min="0" max="30" v-model.number="predatorCount" />
         </label>
 
+        <!-- Шанс смены направления -->
         <label>
           Вероятность смены направления: {{ directionChangeChance }}%
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="1"
-            v-model.number="directionChangeChance"
-          />
+          <input type="range" min="0" max="100" step="1" v-model.number="directionChangeChance" />
         </label>
 
+        <!-- Шанс появления новых растений -->
         <label>
-  Шанс появления новых растений: {{ plantsSpawnChance }}%
-  <input
-    type="range"
-    min="0"
-    max="100"
-    step="1"
-    v-model.number="plantsSpawnChance"
-  />
-</label>
+          Шанс появления новых растений: {{ plantsSpawnChance }}%
+          <input type="range" min="0" max="100" step="1" v-model.number="plantsSpawnChance" />
+        </label>
       </div>
 
+      <!-- Поле canvas -->
       <canvas ref="canvas" :width="width" :height="height" class="ecosystem-canvas" />
     </div>
 
+    <!-- Всплывающая подсказка при наведении -->
     <div
       v-if="hoveredCreature"
       class="tooltip"
@@ -94,36 +97,41 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+// Импорт из Vue
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+
+// Импортируем классы
 import Ecosystem from './Ecosystem.js'
 import Herbivore from '../models/Herbivore.js'
 
-
+// Ссылки и состояния
 const canvas = ref(null)
 const ctx = ref(null)
 const width = 1000
 const height = 600
 
+// Экосистема
 const ecosystem = ref(new Ecosystem(width, height))
 const isRunning = ref(true)
 const speedMultiplier = ref(1)
 
+// Параметры управления
 const directionChangeChance = ref(15)
-
 const plantCount = ref(30)
 const plantsSpawnChance = ref(25)
 const herbivoreCount = ref(10)
 const predatorCount = ref(5)
 
+// Подсказка при наведении
 const hoveredCreature = ref(null)
 const mouseX = ref(0)
 const mouseY = ref(0)
 
 let updateInterval = null
 let timeInterval = null
-
 let lastTime = performance.now()
 
+// Основной цикл отрисовки
 function loop() {
   const now = performance.now()
   const deltaTime = (now - lastTime) * speedMultiplier.value
@@ -135,10 +143,12 @@ function loop() {
   }
 }
 
+// Переключение целей
 function toggleShowTargets() {
   ecosystem.value.showTargets = !ecosystem.value.showTargets
 }
 
+// Отслеживание курсора и определение попадания по объекту
 function handleMouseMove(e) {
   const rect = canvas.value.getBoundingClientRect()
   const x = e.clientX - rect.left
@@ -160,23 +170,24 @@ function handleMouseMove(e) {
   }
 }
 
+// Назначение обработчика мыши
 function setupMouseTracking() {
   canvas.value.removeEventListener('mousemove', handleMouseMove)
   canvas.value.addEventListener('mousemove', handleMouseMove)
 }
 
+// Запуск симуляции
 function startSimulation() {
-  stopSimulation() // гарантированно перезапускаем
-
+  stopSimulation()
   updateInterval = setInterval(loop, 1000 / 30 / speedMultiplier.value)
   timeInterval = setInterval(() => {
     ecosystem.value.simTime += 1 * speedMultiplier.value
   }, 1000)
-
   setupMouseTracking()
   isRunning.value = true
 }
 
+// Остановка симуляции
 function stopSimulation() {
   clearInterval(updateInterval)
   clearInterval(timeInterval)
@@ -185,16 +196,19 @@ function stopSimulation() {
   isRunning.value = false
 }
 
+// Переключение симуляции
 function toggleSimulation() {
   isRunning.value ? stopSimulation() : startSimulation()
 }
 
+// Контроль изменения скорости симуляции
 function handleSpeedChange() {
   if (isRunning.value) {
-    startSimulation() // автоматически перезапустится с новой скоростью
+    startSimulation()
   }
 }
 
+// Сброс состояния
 function resetSimulation() {
   ecosystem.value.plants = []
   ecosystem.value.herbivores = []
@@ -206,41 +220,33 @@ function resetSimulation() {
   ecosystem.value.spawnPredators(predatorCount.value)
 }
 
-// Статистика для растений (просто количество)
+// Статистика (computed)
 const plantCountActual = computed(() => ecosystem.value.plants.length)
 
-// Статистика для травоядных
 const herbivoreCountActual = computed(() => ecosystem.value.herbivores.length)
-const herbivoreAvgSpeed = computed(() => {
-  if (!ecosystem.value.herbivores.length) return 0
-  const sum = ecosystem.value.herbivores.reduce((acc, h) => acc + h.speed, 0)
-  return sum / ecosystem.value.herbivores.length
-})
-const herbivoreAvgPerception = computed(() => {
-  if (!ecosystem.value.herbivores.length) return 0
-  const sum = ecosystem.value.herbivores.reduce((acc, h) => acc + h.perception, 0)
-  return sum / ecosystem.value.herbivores.length
-})
+const herbivoreAvgSpeed = computed(() =>
+  ecosystem.value.herbivores.length ? ecosystem.value.herbivores.reduce((acc, h) => acc + h.speed, 0) / ecosystem.value.herbivores.length : 0
+)
+const herbivoreAvgPerception = computed(() =>
+  ecosystem.value.herbivores.length ? ecosystem.value.herbivores.reduce((acc, h) => acc + h.perception, 0) / ecosystem.value.herbivores.length : 0
+)
 
-// Статистика для хищников
 const predatorCountActual = computed(() => ecosystem.value.predators.length)
-const predatorAvgSpeed = computed(() => {
-  if (!ecosystem.value.predators.length) return 0
-  const sum = ecosystem.value.predators.reduce((acc, p) => acc + p.speed, 0)
-  return sum / ecosystem.value.predators.length
-})
-const predatorAvgPerception = computed(() => {
-  if (!ecosystem.value.predators.length) return 0
-  const sum = ecosystem.value.predators.reduce((acc, p) => acc + p.perception, 0)
-  return sum / ecosystem.value.predators.length
-})
+const predatorAvgSpeed = computed(() =>
+  ecosystem.value.predators.length ? ecosystem.value.predators.reduce((acc, p) => acc + p.speed, 0) / ecosystem.value.predators.length : 0
+)
+const predatorAvgPerception = computed(() =>
+  ecosystem.value.predators.length ? ecosystem.value.predators.reduce((acc, p) => acc + p.perception, 0) / ecosystem.value.predators.length : 0
+)
 
+// Монтирование
 onMounted(() => {
   ctx.value = canvas.value.getContext('2d')
   resetSimulation()
   startSimulation()
 })
 
+// Очистка при размонтировании
 onUnmounted(() => {
   stopSimulation()
 })

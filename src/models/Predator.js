@@ -1,10 +1,12 @@
+// Хищник
 import Animal from './Animal.js'
 
 export default class Predator extends Animal {
   constructor(x, y) {
-    super(x, y, 'red')
+    super(x, y)
   }
 
+  // Проверка возможности размножения
   canReproduceWith(other) {
     return (
       this !== other &&
@@ -14,33 +16,33 @@ export default class Predator extends Animal {
     )
   }
 
+  // Размножение
   reproduceWith(partner) {
-  const child = new Predator(
-    (this.x + partner.x) / 2 + (Math.random() - 0.5) * 10,
-    (this.y + partner.y) / 2 + (Math.random() - 0.5) * 10
-  )
+    const child = new Predator(
+      (this.x + partner.x) / 2 + (Math.random() - 0.5) * 10,
+      (this.y + partner.y) / 2 + (Math.random() - 0.5) * 10
+    )
 
-  // Мутация скорости
-  const speedRoll = Math.floor(Math.random() * (1.0 - 0.1)) + 0.1
-  if (speedRoll < 0.4) child.speed = this.speed
-  else if (speedRoll < 0.8) child.speed = partner.speed
-  else child.speed = 0.5 + Math.random() * 2
+    const speedRoll = Math.floor(Math.random() * (1.0 - 0.1)) + 0.1
+    if (speedRoll < 0.4) child.speed = this.speed
+    else if (speedRoll < 0.8) child.speed = partner.speed
+    else child.speed = 0.5 + Math.random() * 2
 
-  // Мутация восприятия
-  const perceptionRoll = Math.floor(Math.random() * (1.0 - 0.1)) + 0.1
-  if (perceptionRoll < 0.4) child.perception = this.perception
-  else if (perceptionRoll < 0.8) child.perception = partner.perception
-  else child.perception = 70 + Math.random() * 40
+    const perceptionRoll = Math.floor(Math.random() * (1.0 - 0.1)) + 0.1
+    if (perceptionRoll < 0.4) child.perception = this.perception
+    else if (perceptionRoll < 0.8) child.perception = partner.perception
+    else child.perception = 70 + Math.random() * 40
 
-  this.energy *= 0.5
-  partner.energy *= 0.5
+    this.energy *= 0.5
+    partner.energy *= 0.5
 
-  return child
-}
+    return child
+  }
 
-
+  // Основное поведение хищника
   update(ecosystem) {
     switch (this.targetType) {
+      // Охота
       case 'prey': {
         const prey = this.target
         if (!prey || prey.isDead?.()) {
@@ -61,7 +63,7 @@ export default class Predator extends Animal {
         }
         break
       }
-
+      // Размножение
       case 'partner': {
         const partner = this.target
         if (!partner || partner.isDead?.() || !this.canReproduceWith(partner)) {
@@ -86,6 +88,7 @@ export default class Predator extends Animal {
       }
 
       case null: {
+        // Поиск партнера
         for (const other of ecosystem.predators) {
           if (this.canReproduceWith(other)) {
             this.target = other
@@ -93,6 +96,7 @@ export default class Predator extends Animal {
             break
           }
         }
+        // Поиск добычи
         if (!this.target) {
           let closestPrey = null
           let minDist = Infinity
@@ -111,6 +115,7 @@ export default class Predator extends Animal {
         break
       }
     }
+
     this.maybeRandomizeDirection()
     this.move(ecosystem.width, ecosystem.height)
   }
