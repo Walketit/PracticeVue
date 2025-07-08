@@ -97,151 +97,66 @@
 </template>
 
 <script setup>
-// Импорт из Vue
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-
-// Импортируем классы
+import { ref, onMounted, onUnmounted } from 'vue'
 import Ecosystem from './Ecosystem.js'
 import Herbivore from '../models/Herbivore.js'
 
-// Ссылки и состояния
+import { createLoop, useSimulationControls, useStats, setupMouseTracking, resetSimulation as resetSim } from './ControlAndStats.js'
+
 const canvas = ref(null)
 const ctx = ref(null)
 const width = 1000
 const height = 600
 
-// Экосистема
 const ecosystem = ref(new Ecosystem(width, height))
+
 const isRunning = ref(true)
 const speedMultiplier = ref(1)
 
-// Параметры управления
 const directionChangeChance = ref(15)
 const plantCount = ref(30)
 const plantsSpawnChance = ref(25)
 const herbivoreCount = ref(10)
 const predatorCount = ref(5)
 
-// Подсказка при наведении
 const hoveredCreature = ref(null)
 const mouseX = ref(0)
 const mouseY = ref(0)
 
-let updateInterval = null
-let lastTime = performance.now()
+// Статистика
+const {
+  plantCountActual,
+  herbivoreCountActual,
+  herbivoreAvgSpeed,
+  herbivoreAvgPerception,
+  predatorCountActual,
+  predatorAvgSpeed,
+  predatorAvgPerception
+} = useStats(ecosystem)
 
-// Основной цикл отрисовки
-function loop() {
-  const now = performance.now()
-  const deltaTime = (now - lastTime) * speedMultiplier.value
-  lastTime = now
+// Цикл симуляции
+const loop = createLoop(ctx, ecosystem, speedMultiplier, directionChangeChance, plantsSpawnChance)
 
-  if (ctx.value) {
-  ecosystem.value.simTime += deltaTime / 1000 // теперь время обновляется точно
-  ecosystem.value.update(deltaTime, directionChangeChance.value, plantsSpawnChance.value)
-  ecosystem.value.draw(ctx.value)
-}
-}
+// Управление
+const { startSimulation, stopSimulation, toggleSimulation, handleSpeedChange } = useSimulationControls(loop, speedMultiplier, isRunning)
 
 // Переключение целей
 function toggleShowTargets() {
   ecosystem.value.showTargets = !ecosystem.value.showTargets
 }
 
-// Отслеживание курсора и определение попадания по объекту
-function handleMouseMove(e) {
-  const rect = canvas.value.getBoundingClientRect()
-  const x = e.clientX - rect.left
-  const y = e.clientY - rect.top
-  mouseX.value = e.clientX
-  mouseY.value = e.clientY
-
-  hoveredCreature.value = null
-  const allCreatures = [...ecosystem.value.herbivores, ...ecosystem.value.predators]
-
-  for (const creature of allCreatures) {
-    const dx = x - creature.x
-    const dy = y - creature.y
-    const dist = Math.sqrt(dx * dx + dy * dy)
-    if (dist <= creature.radius) {
-      hoveredCreature.value = creature
-      break
-    }
-  }
-}
-
-// Назначение обработчика мыши
-function setupMouseTracking() {
-  canvas.value.removeEventListener('mousemove', handleMouseMove)
-  canvas.value.addEventListener('mousemove', handleMouseMove)
-}
-
-// Запуск симуляции
-function startSimulation() {
-  stopSimulation()
-  updateInterval = setInterval(loop, 1000 / 30 / speedMultiplier.value)
-  setupMouseTracking()
-  isRunning.value = true
-}
-
-// Остановка симуляции
-function stopSimulation() {
-  clearInterval(updateInterval)
-  updateInterval = null
-  isRunning.value = false
-}
-
-// Переключение симуляции
-function toggleSimulation() {
-  isRunning.value ? stopSimulation() : startSimulation()
-}
-
-// Контроль изменения скорости симуляции
-function handleSpeedChange() {
-  if (isRunning.value) {
-    startSimulation()
-  }
-}
-
-// Сброс состояния
+// Сброс
 function resetSimulation() {
-  ecosystem.value.plants = []
-  ecosystem.value.herbivores = []
-  ecosystem.value.predators = []
-  ecosystem.value.simTime = 0
-
-  ecosystem.value.spawnPlants(plantCount.value)
-  ecosystem.value.spawnHerbivores(herbivoreCount.value)
-  ecosystem.value.spawnPredators(predatorCount.value)
+  resetSim(ecosystem, plantCount, herbivoreCount, predatorCount)
 }
 
-// Статистика (computed)
-const plantCountActual = computed(() => ecosystem.value.plants.length)
-
-const herbivoreCountActual = computed(() => ecosystem.value.herbivores.length)
-const herbivoreAvgSpeed = computed(() =>
-  ecosystem.value.herbivores.length ? ecosystem.value.herbivores.reduce((acc, h) => acc + h.speed, 0) / ecosystem.value.herbivores.length : 0
-)
-const herbivoreAvgPerception = computed(() =>
-  ecosystem.value.herbivores.length ? ecosystem.value.herbivores.reduce((acc, h) => acc + h.perception, 0) / ecosystem.value.herbivores.length : 0
-)
-
-const predatorCountActual = computed(() => ecosystem.value.predators.length)
-const predatorAvgSpeed = computed(() =>
-  ecosystem.value.predators.length ? ecosystem.value.predators.reduce((acc, p) => acc + p.speed, 0) / ecosystem.value.predators.length : 0
-)
-const predatorAvgPerception = computed(() =>
-  ecosystem.value.predators.length ? ecosystem.value.predators.reduce((acc, p) => acc + p.perception, 0) / ecosystem.value.predators.length : 0
-)
-
-// Монтирование
 onMounted(() => {
   ctx.value = canvas.value.getContext('2d')
   resetSimulation()
   startSimulation()
+  setupMouseTracking(canvas, ecosystem, hoveredCreature, mouseX, mouseY)
 })
 
-// Очистка при размонтировании
 onUnmounted(() => {
   stopSimulation()
 })
